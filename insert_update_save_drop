@@ -1,0 +1,120 @@
+1.如果数据库不存在，则创建数据库，否则切换到指定数据库。
+	use syz
+
+2.显示当前数据库
+	db
+
+3.查看所有数据库
+	show dbs
+
+4.创建的数据库 syz 并不在数据库的列表中， 要显示它，我们需要向syz 数据库插入一些数据。
+	1.db.syz.insert({name:"mongodb"})
+	2.doc = ({title:"mongodb studing",time:"2016-02"})
+	  db.syz.ainsert(doc)
+	  
+5.删除数据库，切换到要删除的数据库
+	db.dropDatabase()
+
+6.更新文档 update
+db.collection.update(
+   <query>,
+   <update>,
+   {
+     upsert: <boolean>,
+     multi: <boolean>,
+     writeConcern: <document>
+   }
+)
+参数说明：
+	query : update的查询条件，类似sql update查询内where后面的。
+	update : update的对象和一些更新的操作符（如$,$inc...）等，也可以理解为sql update查询内set后面的
+	upsert : 可选，这个参数的意思是，如果不存在update的记录，是否插入objNew,true为插入，默认是false，不插入。
+	multi : 可选，mongodb 默认是false,只更新找到的第一条记录，如果这个参数为true,就把按条件查出来多条记录全部更新。
+	writeConcern :可选，抛出异常的级别。
+
+db.syz.update({'title':'mongodb'},{$set:{'title':'Mongodb'}},{multi:true})
+
+example:
+	o:{ "_id" : ObjectId("4fe0595216c38fae7549540f"), "count" : 2, "test2" : "t12" }
+  	  { "_id" : ObjectId("4fe0595816c38fae75495410"), "count" : 3, "test2" : "t12" }
+  	  1.更新count > 1 的纪录的test2的值为OK1，没有加入multi值
+		u:db.t1.update({"count":{$gt:1}},{$set:{"test2":"OK1"}}) #只更新了第一条数据
+		  更新后:
+		  { "_id" : ObjectId("4fe0595216c38fae7549540f"), "count" : 2, "test2" : "OK1" }
+		  { "_id" : ObjectId("4fe0595816c38fae75495410"), "count" : 3, "test2" : "t12" }
+	  
+	  2.测试更新count > 4 的纪录的test2的值为OK， upsert:true 
+		u:db.t1.update({"count":{$gt:4}},{$set:{"test5":'OK'}},true)
+		  更新后:
+		  { "_id" : ObjectId("4fe0595216c38fae7549540f"), "count" : 2, "test2" : "OK2" }
+          { "_id" : ObjectId("4fe0595816c38fae75495410"), "count" : 3, "test2" : "OK2" }
+          { "test5" : "OK" }
+
+7.更新文档 save
+db.collection.save(
+   <document>,
+   {
+     writeConcern: <document>
+   }
+)
+参数说明：
+	document : 文档数据。
+	writeConcern :可选，别
+
+db.collection.save(obj)
+obj：要更新的纪录，只能试单挑纪录，如果collection没有存在与obj一样的id，则添加一条记录，否则更新
+
+数据更新操作符:
+
+       1）$inc
+                用法：{$inc:{field:value}},对一个数字字段的某个field增加value
+                更新前：{ "_id" : ObjectId("4fe096e88a6e072b231ca5c9"), "name" : "liangzhangping", "age" : 30 }
+                操作：db.t3.update({name:"liangzhangping"},{$inc:{age:5}})
+                更新后：{ "_id" : ObjectId("4fe096e88a6e072b231ca5c9"), "name" : "liangzhangping", "age" : 35 }
+        2）$set
+                用法：{$set:{field:value}},类似于SQL语法中“set field=value”
+                更新前：{ "_id" : ObjectId("4fe096e88a6e072b231ca5c9"), "name" : "liangzhangping", "age" : 30 }
+                操作：db.t3.update({name:"liangzhangping"},{$set:{age:28}})
+                更新后：{ "_id" : ObjectId("4fe096e88a6e072b231ca5c9"), "name" : "liangzhangping", "age" : 28 }
+        3）$unset
+                用法：{$unset:{field:1}},删除字段，类似于SQL语法中删除列
+                更新前：{ "_id" : ObjectId("4fe096e88a6e072b231ca5c9"), "name" : "liangzhangping", "age" : 30 }
+                操作：db.t3.update({name:"liangzhangping"},{$unset:{age:1}})
+                更新后：{ "_id" : ObjectId("4fe096e88a6e072b231ca5c9"), "name" : "liangzhangping" }
+        4）$push
+                用法：{$push:{field:value}},把value追加到field里。field一定是数组类型，如果field不存在，会新增一个
+                更新前：{ "_id" : ObjectId("4fe098f08a6e072b231ca5ca"), "userid" : 3, "name" : [ "liangzhangping", "lzp" ] }
+                操作：db.t3.update({"userid":3},{$push:{name:"xiaoping"}})
+                更新后：{ "_id" : ObjectId("4fe098f08a6e072b231ca5ca"), "name" : [ "liangzhangping", "lzp", "xiaoping" ], "userid" : 3 }
+        5）$pushAll
+                用法：{$push:{field:value_array}},用法同$push一样，只是$pushAll一次可以追加多个值到一个数组字段内
+                更新前：{ "_id" : ObjectId("4fe098f08a6e072b231ca5ca"), "name" : [ "liangzhangping", "lzp", "xiaoping" ], "userid" : 3 }
+                操作：db.t3.update({"userid":3},{$pushAll:{name:["N1","N2"]}})
+                更新后：{ "_id" : ObjectId("4fe098f08a6e072b231ca5ca"), "name" : [ "liangzhangping", "lzp", "xiaoping", "N1", "N2" ], "userid" : 3 }
+        6）$addToSet
+                用法：{$addToSet:{field:value}},加一个值到数组内，而且只有当这个值不在数组内才增加
+                更新前：{ "_id" : ObjectId("4fe098f08a6e072b231ca5ca"), "name" : [ "liangzhangping", "lzp", "xiaoping", "N1", "N2" ], "userid" : 3 }
+                操作：db.t3.update({"userid":3},{$addToSet:{name:"N1"}})
+                更新后：{ "_id" : ObjectId("4fe098f08a6e072b231ca5ca"), "name" : [ "liangzhangping", "lzp", "xiaoping", "N1", "N2" ], "userid" : 3 }
+        7）$pop
+                用法：{$pop:{field:[1,-1]}},删除数组内的一个值，-1：删除第一个，1：删除最后一个
+                更新前：{ "_id" : ObjectId("4fe098f08a6e072b231ca5ca"), "name" : [ "liangzhangping", "lzp", "xiaoping", "N1", "N2" ], "userid" : 3 }
+                操作：db.t3.update({"userid":3},{$pop:{name:-1}})
+                更新后：{ "_id" : ObjectId("4fe098f08a6e072b231ca5ca"), "name" : [ "lzp", "xiaoping", "N1", "N2" ], "userid" : 3 }                
+                操作：db.t3.update({"userid":3},{$pop:{name:1}})
+                更新后：{ "_id" : ObjectId("4fe098f08a6e072b231ca5ca"), "name" : [ "lzp", "xiaoping", "N1" ], "userid" : 3 }
+        8）$pull
+                用法：{$pull:{field:value}},从数组filed内删除一个等于value的值
+                更新前：{ "_id" : ObjectId("4fe098f08a6e072b231ca5ca"), "name" : [ "lzp", "xiaoping", "N1" ], "userid" : 3 }
+                操作：db.t3.update({"userid":3},{$pull:{name:"N1"}})
+                更新后：{ "_id" : ObjectId("4fe098f08a6e072b231ca5ca"), "name" : [ "lzp", "xiaoping" ], "userid" : 3 }     
+        9）$pullAll
+                用法：{$pullAll:{field:value_array}},用法同$pull一样，可以一次删除数组内的多个值
+                更新后：{ "_id" : ObjectId("4fe098f08a6e072b231ca5ca"), "name" : [ "lzp", "xiaoping" ], "userid" : 3 } 
+                操作：db.t3.update({"userid":3},{$pullAll:{name:["lzp", "xiaoping"]}})
+                更新后：{ "_id" : ObjectId("4fe098f08a6e072b231ca5ca"), "name" : [ ], "userid" : 3 }      
+        10）$rename
+                用法：{$rename:{old_field_name:new_field_name}},完成字段的重命名
+                更新后：{ "_id" : ObjectId("4fe098f08a6e072b231ca5ca"), "name" : [ ], "userid" : 3 }   
+                操作：db.t3.update({"userid":3},{$rename:{name:"alias"}})
+                更新后：{ "_id" : ObjectId("4fe098f08a6e072b231ca5ca"), "alias" : [ ], "userid" : 3 }  
