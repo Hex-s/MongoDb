@@ -118,3 +118,81 @@ obj：要更新的纪录，只能试单挑纪录，如果collection没有存在�
                 更新后：{ "_id" : ObjectId("4fe098f08a6e072b231ca5ca"), "name" : [ ], "userid" : 3 }   
                 操作：db.t3.update({"userid":3},{$rename:{name:"alias"}})
                 更新后：{ "_id" : ObjectId("4fe098f08a6e072b231ca5ca"), "alias" : [ ], "userid" : 3 }  
+
+8.移除集合中的数据
+    db.collection.remove(
+   <query>,
+   {
+     justOne: <boolean>,
+     writeConcern: <document>
+   }
+)
+参数说明：
+    query :（可选）删除的文档的条件。
+    justOne : （可选）如果设为 true 或 1，则只删除一个文档。
+    writeConcern :（可选）抛出异常的级别。
+
+删除所有文档
+db.col.remove({})
+
+插入两条数据
+    db.col.insert({'title':'MongoDB','id':1})
+    db.col.insert({'title':'MongoDB','id':2})
+删除所有title为MongoDB的数据
+    db.col.remove({'title':'MongoDB'})
+删除一条title为MongoDB的数据
+    db.col.remove({'title':'MongoDB'},1)
+    or
+    db.col.remove({'title':'MongoDB'},true)
+
+9.查询文档
+db.col.find()
+db.col.find().pretty()
+db.col.findOne()
+
+and:	db.col.find({key1:value1, key2:value2})
+or: 	db.col.find({$or: [{key1: value1}, {key2:value2}]})
+and+or:	db.col.find({'key':{$gt:50},$or:[{},{}]})
+limit:	db.col.find({},{"title":1,_id:0}).limit(2)
+skip:   db.col.find({},{"title":1,_id:0}).skip(2)
+
+操作        格式                    范例                                        RDBMS中的类似语句
+等于        {<key>:<value>}         db.col.find({"by":"菜鸟教程"}).pretty()     where by = '菜鸟教程'
+小于        {<key>:{$lt:<value>}}   db.col.find({"likes":{$lt:50}}).pretty()    where likes < 50
+小于或等于  {<key>:{$lte:<value>}}  db.col.find({"likes":{$lte:50}}).pretty()   where likes <= 50
+大于        {<key>:{$gt:<value>}}   db.col.find({"likes":{$gt:50}}).pretty()    where likes > 50
+大于或等于  {<key>:{$gte:<value>}}  db.col.find({"likes":{$gte:50}}).pretty()   where likes >= 50
+不等于      {<key>:{$ne:<value>}}   db.col.find({"likes":{$ne:50}}).pretty()    where likes != 50
+
+db.col.find({likes : {$lt :200, $gt : 100}})
+
+
+类型                        数字    备注
+Double                      1
+String                      2
+Object                      3
+Array                       4
+Binary data                 5
+Undefined                   6       已废弃。
+Object id                   7
+Boolean                     8
+Date                        9
+Null                        10
+Regular Expression          11
+JavaScript                  13
+Symbol                      14
+JavaScript (with scope)     15
+32-bit integer              16
+Timestamp                   17
+64-bit integer              18
+Min key                     255     Query with -1.
+Max key                     127
+
+获取 "col" 集合中 title 为 String 的数据
+	db.col.find({"title" : {$type : 2}})
+
+
+10.排序 sort
+其中 1 为升序排列，而-1是用于降序排列
+
+db.col.find().sort({"likes":-1})
